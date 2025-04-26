@@ -1,0 +1,457 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Language Learning Flashcards</title>
+    <style>
+        :root {
+            --primary-color: #4285f4;
+            --secondary-color: #34a853;
+            --accent-color: #ea4335;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f5f5f5;
+            margin: 0;
+            padding: 20px;
+        }
+        
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        
+        .controls {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+        
+        .control-group {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+        
+        select, button {
+            padding: 8px 15px;
+            border-radius: 5px;
+            border: 1px solid #ddd;
+            background: white;
+            cursor: pointer;
+        }
+        
+        button {
+            background: var(--primary-color);
+            color: white;
+            border: none;
+            transition: opacity 0.2s;
+        }
+        
+        button:hover {
+            opacity: 0.9;
+        }
+        
+        button.secondary {
+            background: var(--secondary-color);
+        }
+        
+        button.accent {
+            background: var(--accent-color);
+        }
+        
+        .progress-indicator {
+            text-align: center;
+            margin: 15px 0;
+            font-weight: bold;
+        }
+        
+        .flashcards-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+            gap: 20px;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        
+        .flashcard {
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+            height: 200px;
+            perspective: 1000px;
+            cursor: pointer;
+            position: relative;
+            transform-style: preserve-3d;
+            transition: transform 0.6s;
+        }
+        
+        .flashcard.flipped {
+            transform: rotateY(180deg);
+        }
+        
+        .flashcard-face {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            backface-visibility: hidden;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+            box-sizing: border-box;
+            border-radius: 10px;
+        }
+        
+        .front {
+            background: white;
+        }
+        
+        .back {
+            background: var(--primary-color);
+            color: white;
+            transform: rotateY(180deg);
+        }
+        
+        .word {
+            font-size: 24px;
+            font-weight: bold;
+            margin-bottom: 10px;
+            text-align: center;
+        }
+        
+        .pronunciation {
+            font-style: italic;
+            margin-bottom: 15px;
+        }
+        
+        .audio-btn {
+            background: var(--secondary-color);
+            color: white;
+            border: none;
+            padding: 8px 15px;
+            border-radius: 20px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            margin-top: 10px;
+        }
+        
+        .audio-btn:hover {
+            opacity: 0.9;
+        }
+        
+        .progress-bar {
+            width: 100%;
+            height: 5px;
+            background: #e0e0e0;
+            margin-top: 20px;
+            border-radius: 5px;
+        }
+        
+        .progress {
+            height: 100%;
+            background: var(--secondary-color);
+            border-radius: 5px;
+            width: 0%;
+            transition: width 0.3s;
+        }
+        
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            justify-content: center;
+            align-items: center;
+            z-index: 100;
+        }
+        
+        .modal-content {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            width: 90%;
+            max-width: 500px;
+        }
+        
+        .form-group {
+            margin-bottom: 15px;
+        }
+        
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        
+        .form-group input, .form-group textarea {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            box-sizing: border-box;
+        }
+        
+        .form-actions {
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+            margin-top: 20px;
+        }
+        
+        @media (max-width: 768px) {
+            .flashcards-container {
+                grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            }
+            
+            .controls {
+                flex-direction: column;
+            }
+        }
+        
+        @media (max-width: 480px) {
+            .flashcards-container {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>Language Learning Flashcards</h1>
+        <p>Click on a card to flip it and reveal the translation</p>
+    </div>
+    
+    <div class="controls">
+        <div class="control-group">
+            <select id="language-select">
+                <option value="french">French</option>
+                <option value="spanish">Spanish</option>
+                <option value="german">German</option>
+                <option value="custom">Custom Deck</option>
+            </select>
+            <button id="shuffle-btn" class="secondary">Shuffle Cards</button>
+        </div>
+        <button id="add-card-btn" class="accent">+ Add New Card</button>
+    </div>
+    
+    <div class="progress-indicator" id="progress-indicator">
+        Card 1 of 6
+    </div>
+    
+    <div class="flashcards-container" id="flashcards">
+        <!-- Cards will be generated by JavaScript -->
+    </div>
+    
+    <!-- Add Card Modal -->
+    <div class="modal" id="add-card-modal">
+        <div class="modal-content">
+            <h2>Add New Flashcard</h2>
+            <form id="add-card-form">
+                <div class="form-group">
+                    <label for="card-front">Front (English)</label>
+                    <input type="text" id="card-front" required>
+                </div>
+                <div class="form-group">
+                    <label for="card-back">Back (Translation)</label>
+                    <input type="text" id="card-back" required>
+                </div>
+                <div class="form-group">
+                    <label for="card-pronunciation">Pronunciation</label>
+                    <input type="text" id="card-pronunciation">
+                </div>
+                <div class="form-actions">
+                    <button type="button" id="cancel-add-card" class="secondary">Cancel</button>
+                    <button type="submit" class="primary">Add Card</button>
+                </div>
+            </form>
+        </div>
+    </div>
+    
+    <script>
+        // Sample flashcard data
+        let flashcardData = {
+            french: [
+                { english: "Hello", translation: "Bonjour", pronunciation: "bohn-zhoor" },
+                { english: "Goodbye", translation: "Au revoir", pronunciation: "oh ruh-vwahr" },
+                { english: "Thank you", translation: "Merci", pronunciation: "mehr-see" },
+                { english: "Please", translation: "S'il vous plaît", pronunciation: "seel voo play" },
+                { english: "Yes", translation: "Oui", pronunciation: "wee" },
+                { english: "No", translation: "Non", pronunciation: "nohn" }
+            ],
+            spanish: [
+                { english: "Hello", translation: "Hola", pronunciation: "oh-lah" },
+                { english: "Goodbye", translation: "Adiós", pronunciation: "ah-dee-ohs" },
+                { english: "Thank you", translation: "Gracias", pronunciation: "grah-see-ahs" },
+                { english: "Please", translation: "Por favor", pronunciation: "por fah-vor" },
+                { english: "Yes", translation: "Sí", pronunciation: "see" },
+                { english: "No", translation: "No", pronunciation: "noh" }
+            ],
+            german: [
+                { english: "Hello", translation: "Hallo", pronunciation: "hah-loh" },
+                { english: "Goodbye", translation: "Auf Wiedersehen", pronunciation: "owf vee-der-zay-en" },
+                { english: "Thank you", translation: "Danke", pronunciation: "dahn-keh" },
+                { english: "Please", translation: "Bitte", pronunciation: "bit-teh" },
+                { english: "Yes", translation: "Ja", pronunciation: "yah" },
+                { english: "No", translation: "Nein", pronunciation: "nine" }
+            ],
+            custom: []
+        };
+        
+        // Current state
+        let currentLanguage = 'french';
+        let currentDeck = [...flashcardData[currentLanguage]];
+        
+        // DOM elements
+        const flashcardsContainer = document.getElementById('flashcards');
+        const languageSelect = document.getElementById('language-select');
+        const shuffleBtn = document.getElementById('shuffle-btn');
+        const addCardBtn = document.getElementById('add-card-btn');
+        const progressIndicator = document.getElementById('progress-indicator');
+        const addCardModal = document.getElementById('add-card-modal');
+        const addCardForm = document.getElementById('add-card-form');
+        const cancelAddCard = document.getElementById('cancel-add-card');
+        
+        // Initialize the app
+        function init() {
+            generateFlashcards();
+            setupEventListeners();
+        }
+        
+        // Generate flashcards
+        function generateFlashcards() {
+            flashcardsContainer.innerHTML = '';
+            
+            currentDeck.forEach((card, index) => {
+                const flashcard = document.createElement('div');
+                flashcard.className = 'flashcard';
+                flashcard.dataset.index = index;
+                
+                flashcard.innerHTML = `
+                    <div class="flashcard-face front">
+                        <div class="word">${card.english}</div>
+                        <div class="progress-bar"><div class="progress" style="width: 0%"></div></div>
+                    </div>
+                    <div class="flashcard-face back">
+                        <div class="word">${card.translation}</div>
+                        <div class="pronunciation">${card.pronunciation || ''}</div>
+                        <button class="audio-btn" onclick="playAudio('${card.translation}', '${currentLanguage}')">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
+                                <path d="M11.536 14.01A8.473 8.473 0 0 0 14.026 8a8.473 8.473 0 0 0-2.49-6.01l-.708.707A7.476 7.476 0 0 1 13.025 8c0 2.071-.84 3.946-2.197 5.303l.708.707z"/>
+                                <path d="M10.121 12.596A6.48 6.48 0 0 0 12.025 8a6.48 6.48 0 0 0-1.904-4.596l-.707.707A5.483 5.483 0 0 1 11.025 8a5.483 5.483 0 0 1-1.61 3.89l.706.706z"/>
+                                <path d="M8.707 11.182A4.486 4.486 0 0 0 10.025 8a4.486 4.486 0 0 0-1.318-3.182L8 5.525A3.489 3.489 0 0 1 9.025 8 3.49 3.49 0 0 1 8 10.475l.707.707zM6.717 3.55A.5.5 0 0 1 7 4v8a.5.5 0 0 1-.812.39L3.825 10.5H1.5A.5.5 0 0 1 1 10V6a.5.5 0 0 1 .5-.5h2.325l2.363-1.89a.5.5 0 0 1 .529-.06z"/>
+                            </svg>
+                            <span style="margin-left: 5px;">Hear it</span>
+                        </button>
+                    </div>
+                `;
+                
+                flashcard.addEventListener('click', function() {
+                    this.classList.toggle('flipped');
+                    // Update progress
+                    const progress = this.querySelector('.progress');
+                    progress.style.width = '100%';
+                    updateProgressIndicator();
+                });
+                
+                flashcardsContainer.appendChild(flashcard);
+            });
+            
+            updateProgressIndicator();
+        }
+        
+        // Update progress indicator
+        function updateProgressIndicator() {
+            const totalCards = currentDeck.length;
+            const completedCards = document.querySelectorAll('.progress[style="width: 100%"]').length;
+            progressIndicator.textContent = `Card ${completedCards} of ${totalCards}`;
+        }
+        
+        // Shuffle cards
+        function shuffleCards() {
+            currentDeck = [...currentDeck.sort(() => Math.random() - 0.5)];
+            generateFlashcards();
+        }
+        
+        // Add new card
+        function addNewCard(front, back, pronunciation) {
+            const newCard = {
+                english: front,
+                translation: back,
+                pronunciation: pronunciation
+            };
+            
+            if (currentLanguage === 'custom') {
+                flashcardData.custom.push(newCard);
+            } else {
+                // For predefined decks, we'll add to custom deck
+                if (!flashcardData.custom.some(card => card.english === front)) {
+                    flashcardData.custom.push(newCard);
+                }
+            }
+            
+            // Refresh the current deck
+            currentDeck = [...flashcardData[currentLanguage]];
+            generateFlashcards();
+        }
+        
+        // Setup event listeners
+        function setupEventListeners() {
+            // Language select change
+            languageSelect.addEventListener('change', function() {
+                currentLanguage = this.value;
+                currentDeck = [...flashcardData[currentLanguage]];
+                generateFlashcards();
+            });
+            
+            // Shuffle button
+            shuffleBtn.addEventListener('click', shuffleCards);
+            
+            // Add card button
+            addCardBtn.addEventListener('click', function() {
+                addCardModal.style.display = 'flex';
+            });
+            
+            // Cancel add card
+            cancelAddCard.addEventListener('click', function() {
+                addCardModal.style.display = 'none';
+                addCardForm.reset();
+            });
+            
+            // Add card form submit
+            addCardForm.addEventListener('submit', function(e) {
+                e.preventDefault();
+                const front = document.getElementById('card-front').value;
+                const back = document.getElementById('card-back').value;
+                const pronunciation = document.getElementById('card-pronunciation').value;
+                
+                addNewCard(front, back, pronunciation);
+                addCardModal.style.display = 'none';
+                this.reset();
+            });
+        }
+        
+        // Play audio function (would integrate with a text-to-speech API in a real implementation)
+        function playAudio(text, language) {
+            event.stopPropagation(); // Prevent card flip when clicking audio button
+            alert(`In a full implementation, this would play the pronunciation of "${text}" in ${language}`);
+            // Actual implementation might use:
+            // const utterance = new SpeechSynthesisUtterance(text);
+            // utterance.lang = languageCodes[language];
+            // window.speechSynthesis.speak(utterance);
+        }
+        
+        // Initialize the app
+        init();
+    </script>
+</body>
+</html> 
